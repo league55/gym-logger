@@ -1,32 +1,36 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Exercise, ExerciseParameters } from '../types';
+import { Exercise, ExerciseParameters } from '../../types';
 
 interface ExerciseProgressProps {
   history: Array<{ date: string; parameters: ExerciseParameters }>;
   exerciseParameters: Exercise['parameters'];
 }
 
+const PARAMETER_LABELS = {
+  weight: 'Weight (kg)',
+  repetitions: 'Repetitions',
+  time: 'Time (min)',
+  distance: 'Distance (km)'
+} as const;
+
 export function ExerciseProgress({ history, exerciseParameters }: ExerciseProgressProps) {
-  const availableParameters = Object.entries(exerciseParameters)
+  const availableParameters = Object.entries(exerciseParameters || {})
     .filter(([_, hasParameter]) => hasParameter)
     .map(([key]) => key.replace('has', '').toLowerCase());
 
   const [selectedParameter, setSelectedParameter] = useState(availableParameters[0]);
 
-  const data = history
+  const chartData = history
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(entry => ({
       date: new Date(entry.date).toLocaleDateString(),
       value: entry.parameters[selectedParameter as keyof ExerciseParameters] || 0
     }));
 
-  const parameterLabels = {
-    weight: 'Weight (kg)',
-    repetitions: 'Repetitions',
-    time: 'Time (min)',
-    distance: 'Distance (km)'
-  };
+  if (!exerciseParameters || availableParameters.length === 0) {
+    return <div>No progress data available</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -42,7 +46,7 @@ export function ExerciseProgress({ history, exerciseParameters }: ExerciseProgre
           >
             {availableParameters.map(param => (
               <option key={param} value={param}>
-                {parameterLabels[param as keyof typeof parameterLabels]}
+                {PARAMETER_LABELS[param as keyof typeof PARAMETER_LABELS]}
               </option>
             ))}
           </select>
@@ -51,12 +55,12 @@ export function ExerciseProgress({ history, exerciseParameters }: ExerciseProgre
       
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis 
               label={{ 
-                value: parameterLabels[selectedParameter as keyof typeof parameterLabels],
+                value: PARAMETER_LABELS[selectedParameter as keyof typeof PARAMETER_LABELS],
                 angle: -90,
                 position: 'insideLeft'
               }}
